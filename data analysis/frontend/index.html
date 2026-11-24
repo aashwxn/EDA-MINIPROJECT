@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Asset Financial Market Volatility Risk Analysis System</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="inner">
+    <a class="brand" href="#dashboard"><span class="logo">&#9650;</span><span><b>Volatility Risk Analysis</b><small>Multi-Asset Financial Market System</small></span></a>
+    <button id="menuBtn" class="menu" aria-label="Menu">&#9776;</button>
+    <nav id="nav">
+      <a data-page="dashboard" href="#dashboard">Dashboard</a>
+      <a data-page="upload" href="#upload">Upload Dataset</a>
+      <a data-page="samples" href="#samples">Sample Datasets</a>
+      <a data-page="asset" href="#asset">Asset Analysis</a>
+      <a data-page="risk" href="#risk">Risk Analysis</a>
+      <a data-page="compare" href="#compare">Asset Comparison</a>
+      <a data-page="reports" href="#reports">Reports</a>
+    </nav>
+  </div>
+</header>
+
+<div id="filterbar" class="filterbar" hidden>
+  <div class="inner">
+    <span class="dsname">Dataset: <b id="dsName">-</b></span>
+    <details class="dd"><summary id="assetSummary">Assets</summary><div id="assetChecks" class="ddbox"></div></details>
+    <label>From <input type="date" id="fFrom"></label>
+    <label>To <input type="date" id="fTo"></label>
+    <label>VaR confidence <select id="fConf"><option value="0.9">90%</option><option value="0.95" selected>95%</option><option value="0.99">99%</option></select></label>
+    <button class="btn small" id="btnApply">Apply Filters</button>
+    <button class="btn small ghost" id="btnClear">Clear Filters</button>
+  </div>
+</div>
+
+<main class="inner">
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="page">
+    <h1>Dashboard</h1><p class="sub">Overview of volatility and risk across all analyzed assets.</p>
+    <div data-empty></div>
+    <div data-content hidden>
+      <div id="dCards" class="cards"></div>
+      <h2>Risk indicators</h2><div id="dRisk" class="riskgrid"></div>
+      <div class="grid2">
+        <div class="card"><h3>Annualized volatility by asset</h3><div class="chart"><canvas id="chVol"></canvas></div></div>
+        <div class="card"><h3>Normalized price (start = 100)</h3><div class="chart"><canvas id="chNorm"></canvas></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UPLOAD -->
+  <section id="upload" class="page" hidden>
+    <h1>Upload Dataset</h1><p class="sub">Upload a CSV or Excel file with a Date column and one or more price columns (or Date, Asset, Close).</p>
+    <div id="drop" class="drop" tabindex="0">
+      <div class="dicon">&#8679;</div>
+      <p><b>Drag &amp; drop</b> your CSV / Excel file here</p>
+      <p class="muted">or</p>
+      <button class="btn" id="btnBrowse" type="button">Browse Files</button>
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden>
+      <p class="muted small">Accepted: .csv, .xlsx, .xls (max 4 MB). Files are processed in memory and are not stored.</p>
+    </div>
+    <div id="alert" class="alert" hidden></div>
+    <div id="preview" class="card" hidden>
+      <div class="row between"><h3 id="pvTitle">Data preview</h3><span id="pvTag" class="tag"></span></div>
+      <p id="pvInfo" class="muted"></p>
+      <div id="pvWarn"></div>
+      <div class="tablewrap" id="pvTable"></div>
+      <div class="row gap wrapbtn">
+        <button class="btn primary big" id="btnAnalyze">Analyze Dataset</button>
+        <button class="btn" id="btnAnother">Upload Another Dataset</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAMPLES -->
+  <section id="samples" class="page" hidden>
+    <h1>Sample Datasets</h1><p class="sub">Two built-in datasets. They are <b>simulated sample data</b>, not real market data. Download the CSV or load it directly.</p>
+    <div id="sampleList" class="grid2"></div>
+  </section>
+
+  <!-- ASSET -->
+  <section id="asset" class="page" hidden>
+    <h1>Asset Analysis</h1><p class="sub">Detailed statistics for one asset.</p>
+    <div data-empty></div>
+    <div data-content hidden>
+      <div class="row gap"><label>Asset <select id="assetSel"></select></label><span id="aBadge"></span></div>
+      <div id="aCards" class="cards"></div>
+      <div class="grid2">
+        <div class="card"><h3>Price</h3><div class="chart"><canvas id="chPrice"></canvas></div></div>
+        <div class="card"><h3>Daily returns</h3><div class="chart"><canvas id="chRet"></canvas></div></div>
+        <div class="card"><h3>Rolling annualized volatility</h3><div class="chart"><canvas id="chRoll"></canvas></div></div>
+        <div class="card"><h3>Drawdown from peak</h3><div class="chart"><canvas id="chDD"></canvas></div></div>
+      </div>
+      <div class="card"><h3>Recent daily data (last 40 records)</h3><div class="tablewrap" id="aTable"></div></div>
+    </div>
+  </section>
+
+  <!-- RISK -->
+  <section id="risk" class="page" hidden>
+    <h1>Risk Analysis</h1><p class="sub">Risk levels, Value at Risk (VaR) and maximum drawdown.</p>
+    <div data-empty></div>
+    <div data-content hidden>
+      <div class="card"><h3>Risk table</h3><div class="tablewrap" id="rTable"></div></div>
+      <div class="grid2">
+        <div class="card"><h3 id="varTitle">Value at Risk (1 day)</h3><div class="chart"><canvas id="chVar"></canvas></div></div>
+        <div class="card"><h3>Maximum drawdown</h3><div class="chart"><canvas id="chMdd"></canvas></div></div>
+      </div>
+      <div class="card"><div class="row gap"><h3>Return distribution</h3><select id="riskSel"></select></div><div class="chart"><canvas id="chHist"></canvas></div></div>
+      <div class="card"><h3>How risk is measured</h3>
+        <p><b>Risk level</b> uses annualized volatility: LOW below 15%, MEDIUM 15% to 30%, HIGH above 30%. It moves up one level if the maximum drawdown is worse than -25%.</p>
+        <p><b>VaR</b> is the loss that should not be exceeded on a single day with the chosen confidence. Historical VaR uses the real return percentile. Parametric VaR assumes normally distributed returns.</p>
+        <p><b>Maximum drawdown</b> is the largest fall from a previous peak to a later low.</p></div>
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section id="compare" class="page" hidden>
+    <h1>Asset Comparison</h1><p class="sub">Compare assets side by side. Use the Assets filter above to choose which assets to include.</p>
+    <div data-empty></div>
+    <div data-content hidden>
+      <div class="card"><h3>Comparison table</h3><div class="tablewrap" id="cTable"></div></div>
+      <div class="card"><h3>Normalized price (start = 100)</h3><div class="chart"><canvas id="chCmpNorm"></canvas></div></div>
+      <div class="grid2">
+        <div class="card"><h3>Annualized volatility</h3><div class="chart"><canvas id="chCmpVol"></canvas></div></div>
+        <div class="card"><h3>Risk vs return (annualized)</h3><div class="chart"><canvas id="chCmpSc"></canvas></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REPORTS -->
+  <section id="reports" class="page" hidden>
+    <h1>Reports</h1><p class="sub">Download the analysis for the current dataset and filters.</p>
+    <div data-empty></div>
+    <div data-content hidden>
+      <div class="card"><h3>Report summary</h3><div id="rSummary"></div></div>
+      <div class="card"><h3>Download</h3>
+        <div class="row gap wrapbtn">
+          <button class="btn primary" id="btnPdf">Download PDF Report</button>
+          <button class="btn primary" id="btnCsv">Download CSV Report</button>
+          <button class="btn" id="btnNew">Upload Another Dataset</button>
+          <button class="btn ghost" id="btnReset">Reset</button>
+        </div></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot"><div class="inner">Sample datasets are simulated and are not real market data. For education only, not financial advice.</div></footer>
+<div id="loader" hidden><div class="spin"></div><span id="loaderText">Working...</span></div>
+<div id="toasts"></div>
+
+<script src="js/vendor/chart.umd.js"></script>
+<script src="js/vendor/jspdf.umd.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
